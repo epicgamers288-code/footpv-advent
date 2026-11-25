@@ -1,0 +1,1 @@
+function e({g:e,c:t,t:n,phase:r,path:i,ball:a,player:o,glide:s}){e.fillStyle(16764779,.22),e.fillRect(10,187,280,114);let c=(n*.65+r)%1;a(t.x*3,(80-240*c*(1-c))*3.6)}export{e as default};

@@ -1,0 +1,1 @@
+function e({g:e,c:t,t:n,phase:r,path:i,ball:a,player:o,glide:s}){e.lineStyle(3,16777215),e.strokeRect(20,60,260,114);let c=(50+34*Math.sin(n+r))*3;e.fillStyle(15967331),e.fillCircle(c,115,18),e.lineStyle(3,16768923),e.strokeCircle(c,115,9),a(150,290)}export{e as default};

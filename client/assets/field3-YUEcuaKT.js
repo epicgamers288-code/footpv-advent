@@ -1,0 +1,1 @@
+function e({g:e,c:t,t:n,phase:r,path:i,ball:a,player:o,glide:s}){e.fillStyle(729140),e.fillRoundedRect(45,122,210,120,20),e.lineStyle(6,6409167),e.strokeRoundedRect(94,98,111,56,22),e.lineBetween(57,150,241,150),a(150,195)}export{e as default};

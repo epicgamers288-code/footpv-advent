@@ -1,0 +1,2 @@
+WITH board AS (SELECT * FROM final_ranks WHERE game=$1 UNION ALL SELECT * FROM rankings WHERE game=$1 AND NOT EXISTS(SELECT FROM closed WHERE game=$1))
+SELECT jsonb_build_object('closed',exists(select from closed where game=$1),'rows',coalesce((select jsonb_agg(jsonb_build_object('place',place,'nick',nick,'avatar',avatar,'score',score,'mine',uid=$2,'tickets',award(place)) order by place,nick,uid) from board join users on id=uid where place<=100 or uid=$2),'[]'))

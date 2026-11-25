@@ -1,0 +1,1 @@
+function e({g:e,c:t,t:n,phase:r,path:i,ball:a,player:o,glide:s}){e.lineStyle(4,16777215),e.lineBetween(25,45,25,320),a(t.variant===0?Math.max(9,125-n*82):t.variant===1?Math.max(26,125-n*82):150+Math.sin(n*2)*82,168)}export{e as default};

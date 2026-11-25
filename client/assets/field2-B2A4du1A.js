@@ -1,0 +1,1 @@
+function e({g:e,c:t,t:n,phase:r,path:i,ball:a,player:o,glide:s}){let c=[12376542,7916526,4092574][t.lane];e.fillStyle(c,.7),e.fillEllipse(148,180,264,207),e.lineStyle(4,16764779),e.strokeCircle(t.x*3,137,23),a(s?150+(s.x-150)*s.f:150,s?288+(s.y-288)*s.f:288)}export{e as default};
