@@ -1,0 +1,1 @@
+function e({g:e,c:t,t:n,phase:r,path:i,ball:a,player:o,glide:s}){e.lineStyle(4,16777215),e.strokeRect(15,253,270,72);for(let t=0;t<9;t++)e.lineStyle(1,16777215,.4),e.lineBetween(16+t*33,253,16+t*33,325);a(150+(t.x*3-150)*Math.min(1,n),36+Math.min(1,n/1.7)*245)}export{e as default};

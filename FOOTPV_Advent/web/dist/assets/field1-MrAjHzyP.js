@@ -1,0 +1,1 @@
+function e({g:e,c:t,t:n,phase:r,path:i,ball:a,player:o,glide:s}){let c=40+Math.min(n,2.65)*92;for(let n=0;n<3;n++)n!==t.lane&&(e.fillStyle(16749650),e.fillTriangle(38+n*100,c+12,62+n*100,c+12,50+n*100,c-13),e.fillStyle(16769992),e.fillRect(45+n*100,c-1,10,3));e.lineStyle(3,9103830),e.lineBetween(10,255,290,255),a(150,285)}export{e as default};

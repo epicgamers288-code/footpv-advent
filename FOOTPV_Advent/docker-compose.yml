@@ -1,0 +1,32 @@
+name: footpv-advent
+services:
+  db:
+    image: postgres:18-alpine
+    environment:
+      POSTGRES_DB: advent
+      POSTGRES_USER: advent
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?Set POSTGRES_PASSWORD}
+    volumes: [db:/var/lib/postgresql]
+    healthcheck:
+      test: ["CMD-SHELL","pg_isready -U advent -d advent"]
+      interval: 4s
+      timeout: 3s
+      retries: 20
+    restart: unless-stopped
+  api:
+    build: ./server
+    environment:
+      DATABASE_URL: postgres://advent:${POSTGRES_PASSWORD}@db/advent
+      BOT_TOKEN: ${BOT_TOKEN:?Set BOT_TOKEN}
+      ADMIN_IDS: ${ADMIN_IDS:?Set ADMIN_IDS}
+      EVENT_YEAR: ${EVENT_YEAR:-2026}
+    depends_on: {db: {condition: service_healthy}}
+    restart: unless-stopped
+  web:
+    build: ./web
+    environment: {PUBLIC_HOST: "${PUBLIC_HOST:?Set PUBLIC_HOST}"}
+    ports: ["80:80","443:443"]
+    volumes: [tls:/data,caddy_config:/config]
+    depends_on: [api]
+    restart: unless-stopped
+volumes: {db: {}, tls: {}, caddy_config: {}}

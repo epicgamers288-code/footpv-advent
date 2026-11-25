@@ -1,0 +1,1 @@
+function e({g:e,c:t,t:n,phase:r,path:i,ball:a,player:o,glide:s}){o(144,201,5888974),t.variant===1&&(o(136,145,15437696),o(163,125,15437696),o(54,87,5888974)),t.variant===0&&o(129,247,15437696),a(157,200)}export{e as default};
