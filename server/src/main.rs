@@ -179,6 +179,13 @@ async fn rpc(
         .bind(uid)
         .fetch_one(&mut *tx)
         .await?;
+    // Practice uses the same scoring engine with transaction-local isolated tables.
+    let practice = matches!(op.as_str(), "practice-start" | "practice-action" | "practice-charge" | "practice-finish");
+    if practice {
+        if !a.admins.contains(&uid) { return Err(deny()); }
+        sqlx::query("set local search_path to advent_practice, public").execute(&mut *tx).await?;
+    }
+    let op = op.strip_prefix("practice-").filter(|_|practice).unwrap_or(&op);
     let date = sqlx::query(
         "select event_day(event_time()) d,wheel_day(event_time()) w,game_at(event_time()) g",
     )
@@ -187,7 +194,7 @@ async fn rpc(
     let day: i32 = date.get("d");
     let wheel: Option<i32> = date.get("w");
     let game: Option<i32> = date.get("g");
-    let out = match op.as_str() {
+    let out = match op {
         "state" => {
             let mut s: V = sqlx::query_scalar(include_str!("state.sql"))
                 .bind(uid)
@@ -202,6 +209,7 @@ async fn rpc(
             };
             s["games"] = json!(&game::GAMES[..unlocked as usize]);
             s["admin"] = json!(a.admins.contains(&uid));
+            if a.admins.contains(&uid) { s["practiceGames"]=json!(game::GAMES); }
             s["rehearsal"] = json!(cfg!(feature = "rehearsal"));
             s
         }
@@ -221,6 +229,14 @@ async fn rpc(
                 sqlx::query("insert into tickets(uid,day,source,part,earned) select $1,$2,'wheel',i,event_time() from generate_series(1,$3)i on conflict do nothing").bind(uid).bind(d).bind(n).execute(&mut *tx).await?;
                 json!({"reward":n})
             }
+        }
+        "start" if practice => {
+            let g=v["game"].as_i64().filter(|n|(1..=10).contains(n)).ok_or_else(||bad("Выберите игру"))? as i32;
+            // Each administrator may restart any drill. Keep at most one run per game.
+            sqlx::query("delete from advent_practice.attempts where uid=$1 and game=$2").bind(uid).bind(g).execute(&mut *tx).await?;
+            let id:String=sqlx::query_scalar("insert into advent_practice.attempts(uid,game,slot,scene,issued,deadline) values($1,$2,1,$3,event_time(),event_time()+$4*interval '1 second') returning id::text")
+                .bind(uid).bind(g).bind(game::scene(g,0)).bind(f64::from(game::GAMES[(g-1)as usize].2)).fetch_one(&mut *tx).await?;
+            round(&mut tx,&id,uid).await?
         }
         "start" => {
             let g = game
@@ -327,7 +343,7 @@ async fn rpc(
             if !a.admins.contains(&uid) {
                 return Err(deny());
             }
-            staff::act(&mut tx, &op, uid, day, &v).await?
+            staff::act(&mut tx, op, uid, day, &v).await?
         }
     };
     tx.commit().await?;
