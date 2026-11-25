@@ -3,7 +3,7 @@ use serde_json::{Value as V, json};
 pub const GAMES: [(&str, &str, i32); 10] = [
     (
         "Тренер сказал: «Легко бежим»",
-        "Выбери свободную дорожку, когда конусы приблизятся к линии игрока.",
+        "Беги по трём дорожкам. Свайп в сторону — перестроение, вверх — прыжок, вниз — подкат. Собери три золотых билета.",
         40,
     ),
     (
@@ -60,6 +60,13 @@ pub fn scene(game: i32, step: i32) -> V {
     };
     let mut r = rand::thread_rng();
     let mut v = json!({"kind":kind,"tip":GAMES[(kind-1)as usize].1,"x":r.gen_range(23..78),"lane":r.gen_range(0..3),"phase":r.gen_range(0..75),"speed":1.+0.035*f64::from(step.min(18))});
+    if game == 1 {
+        v["pace"] = json!(2100 - 40 * step.min(14));
+        v["obstacle"] = json!(["cones", "hurdle", "arch"][step as usize % 3]);
+        v["part"] = json!(match step { 2 => 1, 7 => 2, 12 => 3, _ => 0 });
+    } else if kind == 1 {
+        v["tip"] = json!("Выбери свободную дорожку, когда конусы приблизятся к линии игрока.");
+    }
     let questions: &[(&str, [&str; 3])] = match kind {
         3 => &[
             (

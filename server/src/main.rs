@@ -284,7 +284,20 @@ async fn rpc(
                     if ms < 160 {
                         return Err(bad("Слишком рано"));
                     }
-                    let base = game::score(&c, &v, ms, r.get("power"));
+                    let runner = g == 1 && c["pace"].is_number();
+                    let mut pickup = 0;
+                    let base = if runner {
+                        let pace = c["pace"].as_i64().unwrap() as i32;
+                        if ms < pace - 100 { return Err(bad("Препятствие ещё впереди")); }
+                        let lane = v["lane"].as_i64().filter(|v|(0..3).contains(v)).ok_or_else(||bad("Неизвестная дорожка"))?;
+                        let clear = Some(lane) == c["lane"].as_i64();
+                        let dodge = (c["obstacle"] == "hurdle" && v["move"] == "jump") ||
+                                    (c["obstacle"] == "arch" && v["move"] == "slide");
+                        if ms <= pace + 1400 && (clear || dodge) {
+                            if clear { pickup = c["part"].as_i64().unwrap_or(0) as i32; }
+                            100
+                        } else { 0 }
+                    } else { game::score(&c, &v, ms, r.get("power")) };
                     let combo = if base > 0 {
                         r.get::<i32, _>("combo") + 1
                     } else {
@@ -304,7 +317,21 @@ async fn rpc(
                         .bind(n)
                         .execute(&mut *tx)
                         .await?;
-                    sqlx::query("update attempts set step=step+1,score=score+$2,hits=hits+$3,combo=$4,scene=$5,issued=event_time(),pressed=null,flagged=flagged or ($6=19 and (select stddev_pop(ms)<10 and avg(ms)<450 from events where attempt=attempts.id)) where id::text=$1").bind(id).bind(n).bind(i32::from(n>0)).bind(combo).bind(game::scene(g,step+1)).bind(step).execute(&mut *tx).await?;
+                    let mut next_scene = game::scene(g, step + 1);
+                    if g == 1 && !runner {
+                        // Finish an attempt started by the previous client with its original rules.
+                        next_scene.as_object_mut().unwrap().remove("pace");
+                        next_scene["tip"] = c["tip"].clone();
+                    }
+                    sqlx::query("update attempts set step=step+1,score=score+$2,hits=hits+$3,combo=$4,scene=$5,issued=event_time(),pressed=null,flagged=flagged or ($6=19 and (select stddev_pop(ms)<10 and avg(ms)<450 from events where attempt=attempts.id)) where id::text=$1").bind(id).bind(n).bind(i32::from(n>0)).bind(combo).bind(next_scene).bind(step).execute(&mut *tx).await?;
+                    if runner {
+                        sqlx::query("update attempts set done=($2>=14), runner_pickups=runner_pickups+$3 where id::text=$1")
+                            .bind(id).bind(step).bind(i32::from(pickup > 0)).execute(&mut *tx).await?;
+                        if pickup > 0 && !practice {
+                            sqlx::query("insert into public.tickets(uid,day,source,part,earned) values($1,2,'runner',$2,event_time()) on conflict do nothing")
+                                .bind(uid).bind(pickup).execute(&mut *tx).await?;
+                        }
+                    }
                     points = Some(n);
                 }
             }
